@@ -85,6 +85,8 @@ void puts(const char *s)
 
 void exit(int code)
 {
+	while (1);
+
 #ifdef USE_SERIAL
         static const char shutdown_str[8] = "Shutdown";
         int i;
