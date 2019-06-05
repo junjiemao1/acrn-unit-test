@@ -183,6 +183,8 @@ gdt32:
 	.quad 0
 	.quad 0x00cf9b000000ffff // flat 32-bit code segment
 	.quad 0x00cf93000000ffff // flat 32-bit data segment
+	.quad 0x00cffb000000ffff // flat 32-bit code segment, DPL = 3
+	.quad 0x00cff3000000ffff // flat 32-bit data segment, DPL = 3
 gdt32_end:
 
 .code16
@@ -201,6 +203,33 @@ sipi_end:
 
 .code32
 ap_start32:
+	mov $0x3000, %esp
+	push $(0x20 | 0x1)  // ss
+	push $0x3000        // esp
+	pushf               // eflags
+	push $(0x18 | 0x1)  // cs
+	push $user_entry     // eip
+	iret
+
+user_entry:
+	mov $0x3f8, %dx
+
+	mov $0, %ebx
+	movb %cl, %ds:0(%ebx)
+
+	mov %cs, %ax
+	addb $0x20, %al
+	outb %al, %dx
+	mov $0x34, %al
+	outb %al, %dx
+	mov $0x0d, %al
+	outb %al, %dx
+	mov $0x0a, %al
+	outb %al, %dx
+
+1:
+	jmp 1b
+
 	mov $0x10, %ax
 	mov %ax, %ds
 	mov %ax, %es
