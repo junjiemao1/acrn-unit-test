@@ -1,6 +1,7 @@
 #include "libcflat.h"
 #include "apic.h"
 #include "asm/io.h"
+#include "processor.h"
 
 #define KBD_CCMD_READ_OUTPORT   0xD0    /* read output port */
 #define KBD_CCMD_WRITE_OUTPORT  0xD1    /* write output port */
@@ -38,8 +39,21 @@ extern char resume_start, resume_end;
 #define bad (*(volatile int *)0x2004)
 #define resumed (*(volatile int *)0x2008)
 
+#define wait()						\
+	do {						\
+		u64 tsc = rdtsc() + 2000000000ULL;	\
+		while (rdtsc() < tsc);			\
+	} while (0)
+
 int main(int argc, char **argv)
 {
+	printf("apic id: %d\n", apic_id());
+
+	while (1) {
+		printf("Heartbeat from BP\n");
+		wait();
+	}
+
 	volatile u16 *resume_vector_ptr = (u16 *)0x467L;
 	char *addr, *resume_vec = (void*)0x1000;
 
@@ -128,3 +142,23 @@ asm (
 	".code64\n"
 #endif
     );
+
+void ap_main(void)
+{
+	int i;
+
+	printf("apic id: %d\n", apic_id());
+
+	for (i = 0; i < 3; i++) {
+		printf("Heartbeat from AP: pre\n");
+		wait();
+	}
+
+	apic_icr_write(APIC_DEST_PHYSICAL | APIC_DM_INIT, 0);
+	apic_icr_write(APIC_DEST_PHYSICAL | APIC_DM_STARTUP, 0);
+
+	while (1) {
+		printf("Heartbeat from AP: post\n");
+		wait();
+	}
+}

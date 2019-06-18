@@ -203,6 +203,7 @@ sipi_end:
 
 .code32
 ap_start32:
+/*
 	mov $0x3000, %esp
 	push $(0x20 | 0x1)  // ss
 	push $0x3000        // esp
@@ -229,7 +230,7 @@ user_entry:
 
 1:
 	jmp 1b
-
+*/
 	mov $0x10, %ax
 	mov %ax, %ds
 	mov %ax, %es
@@ -246,10 +247,11 @@ user_entry:
 ap_start64:
 	call load_tss
 	call enable_apic
-	call enable_x2apic
+	// call enable_x2apic
 	sti
 	nop
 	lock incw cpu_online_count
+	call ap_main
 
 1:	hlt
 	jmp 1b
@@ -260,7 +262,7 @@ start64:
 	call mask_pic_interrupts
 	call enable_apic
 	call smp_init
-	call enable_x2apic
+	// call enable_x2apic
 	mov mb_boot_info(%rip), %rbx
 	mov %rbx, %rdi
 	call setup_multiboot
@@ -324,9 +326,11 @@ smp_init:
 	mov $(sipi_end - sipi_entry), %rcx
 	rep/movsb
 	mov $APIC_DEFAULT_PHYS_BASE, %eax
-	movl $(APIC_DEST_ALLBUT | APIC_DEST_PHYSICAL | APIC_DM_INIT | APIC_INT_ASSERT), APIC_ICR(%rax)
-	movl $(APIC_DEST_ALLBUT | APIC_DEST_PHYSICAL | APIC_DM_INIT), APIC_ICR(%rax)
-	movl $(APIC_DEST_ALLBUT | APIC_DEST_PHYSICAL | APIC_DM_STARTUP), APIC_ICR(%rax)
+	// movl $(APIC_DEST_ALLBUT | APIC_DEST_PHYSICAL | APIC_DM_INIT | APIC_INT_ASSERT), APIC_ICR(%rax)
+	movl $0x1000000, APIC_ICR2(%rax)
+	movl $(APIC_DEST_PHYSICAL | APIC_DM_INIT), APIC_ICR(%rax)
+	movl $0x1000000, APIC_ICR2(%rax)
+	movl $(APIC_DEST_PHYSICAL | APIC_DM_STARTUP), APIC_ICR(%rax)
 	call fwcfg_get_nb_cpus
 1:	pause
 	cmpw %ax, cpu_online_count

@@ -38,7 +38,7 @@ else
 fi
 
 command="${qemu} -nodefaults $pc_testdev -vnc none -serial stdio $pci_testdev"
-command+=" -machine accel=$ACCEL -kernel"
+command+=" -smp cpus=4 -cpu host -machine accel=$ACCEL -kernel "
 command="$(timeout_cmd) $command"
 
 run_qemu ${command} "$@"
